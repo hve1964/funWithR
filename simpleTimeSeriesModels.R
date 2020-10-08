@@ -69,7 +69,7 @@ y_xts <- xts(x = t(rbind(y1, y2, y3, y4)) ,
 #-------------------------------------------------------------------------------
 # Definition: lines representing +/-Q97.5 of N(0, sigma^2), scaled by sqrt(t)
 #-------------------------------------------------------------------------------
-line95 <- function(x, sign = 1, sigma = 1.0) {
+line975 <- function(x, sign = 1, sigma = 1.0) {
   t1 <- (x - Sys.Date())
   t2 <- as.numeric(t1)
   out <- sign * qnorm(p = 0.975, mean = 0, sd = sigma) * sqrt(t2)
@@ -108,7 +108,7 @@ tidy(mseries) %>%
   xlab(label = "time [days]") +
   ylab(label = "displacement [1]") +
   stat_function(
-    fun = line95,
+    fun = line975,
     args = list(sign = 1, sigma = sigma),
     linetype = "dashed",
     colour = "red"
@@ -176,7 +176,7 @@ tidy(mseries2) %>%
   xlab(label = "time [days]") +
   ylab(label = "lag-1-difference displacement [1]") +
   stat_function(
-    fun = line95,
+    fun = line975,
     args = list(sign = 1, sigma = sigma),
     linetype = "dashed",
     colour = "red"
