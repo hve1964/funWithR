@@ -67,12 +67,12 @@ y_xts <- xts(x = t(rbind(y1, y2, y3, y4)) ,
              order.by = time)
 
 #-------------------------------------------------------------------------------
-# Definition: lines representing Q95 of N(0, sigma^2), scaled by sqrt(t)
+# Definition: lines representing +/-Q97.5 of N(0, sigma^2), scaled by sqrt(t)
 #-------------------------------------------------------------------------------
 line95 <- function(x, sign = 1, sigma = 1.0) {
   t1 <- (x - Sys.Date())
   t2 <- as.numeric(t1)
-  out <- sign * qnorm(p = 0.95, mean = 0, sd = sigma) * sqrt(t2)
+  out <- sign * qnorm(p = 0.975, mean = 0, sd = sigma) * sqrt(t2)
   return(out)
 }
 
