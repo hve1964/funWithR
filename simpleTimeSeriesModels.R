@@ -22,7 +22,7 @@ library(magrittr)
 ## Specify parameter values
 #-------------------------------------------------------------------------------
 n <- 250
-alpha <- 0.95
+alpha <- 0.75
 sigma <- 2.0
 
 #-------------------------------------------------------------------------------
@@ -114,7 +114,7 @@ tidy(mseries) %>%
     colour = "red"
   ) +
   stat_function(
-    fun = line95,
+    fun = line975,
     args = list(sign = -1, sigma = sigma),
     linetype = "dashed",
     colour = "red"
@@ -182,7 +182,7 @@ tidy(mseries2) %>%
     colour = "red"
   ) +
   stat_function(
-    fun = line95,
+    fun = line975,
     args = list(sign = -1, sigma = sigma),
     linetype = "dashed",
     colour = "red"
