@@ -67,12 +67,15 @@ y_xts <- xts(x = t(rbind(y1, y2, y3, y4)) ,
              order.by = time)
 
 #-------------------------------------------------------------------------------
-# Definition: lines representing +/-Q97.5 of N(0, sigma^2), scaled by sqrt(t)
+# Definition: lines representing quantiles of N(0, sigma^2), scaled by sqrt(t)
 #-------------------------------------------------------------------------------
-line975 <- function(x, sign = 1, sigma = 1.0) {
+quantileLineNorm <- function(x,
+                             sign = 1,
+                             prob = 0.89,
+                             sigma = 1.0) {
   t1 <- (x - Sys.Date())
   t2 <- as.numeric(t1)
-  out <- sign * qnorm(p = 0.975, mean = 0, sd = sigma) * sqrt(t2)
+  out <- sign * qnorm(p = prob, mean = 0, sd = sigma) * sqrt(t2)
   return(out)
 }
 
@@ -108,15 +111,39 @@ tidy(mseries) %>%
   xlab(label = "time [days]") +
   ylab(label = "displacement [1]") +
   stat_function(
-    fun = line975,
-    args = list(sign = 1, sigma = sigma),
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.89,
+                sigma = sigma),
     linetype = "dashed",
     colour = "red"
   ) +
   stat_function(
-    fun = line975,
-    args = list(sign = -1, sigma = sigma),
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.89,
+      sigma = sigma
+    ),
     linetype = "dashed",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.97,
+                sigma = sigma),
+    linetype = "dotdash",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.97,
+      sigma = sigma
+    ),
+    linetype = "dotdash",
     colour = "red"
   )
 
@@ -176,15 +203,39 @@ tidy(mseries2) %>%
   xlab(label = "time [days]") +
   ylab(label = "lag-1-difference displacement [1]") +
   stat_function(
-    fun = line975,
-    args = list(sign = 1, sigma = sigma),
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.89,
+                sigma = sigma),
     linetype = "dashed",
     colour = "red"
   ) +
   stat_function(
-    fun = line975,
-    args = list(sign = -1, sigma = sigma),
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.89,
+      sigma = sigma
+    ),
     linetype = "dashed",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.97,
+                sigma = sigma),
+    linetype = "dotdash",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.97,
+      sigma = sigma
+    ),
+    linetype = "dotdash",
     colour = "red"
   )
 
