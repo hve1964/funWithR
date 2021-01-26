@@ -1,7 +1,7 @@
 ################################################################################
 # author: Henk van Elst
 # file: simpleTimeSeriesModels.R
-# date: Sa, 03.10.2020 / Do, 08.10.2020
+# date: Sa, 03.10.2020 / Do, 08.10.2020 / So, 24.01.2021 / Di, 26.01.2021
 # description: Generation of simple time series: white noise and AR(1), with
 #   special case random walk
 # Cf.: https://rc2e.com/timeseriesanalysis
@@ -13,10 +13,9 @@ rm(list=ls())
 #-------------------------------------------------------------------------------
 ## Load packages
 #-------------------------------------------------------------------------------
+library(tidyverse)
 library(xts)
-library(ggplot2)
-library(broom)
-library(magrittr)
+library(urca)
 
 #-------------------------------------------------------------------------------
 ## Specify parameter values
@@ -103,10 +102,10 @@ names(mseries) <-
 index(mseries) <-
   as.Date(index(mseries))
 
-tidy(mseries) %>%
-  ggplot(mapping = aes(x = index, y = value, colour = series)) +
+broom::tidy(x = mseries) %>%
+  ggplot(data = .,
+         mapping = aes(x = index, y = value, colour = series)) +
   geom_line(size = 1.0) +
-  theme_bw() +
   labs(title = "Simple time series models") +
   xlab(label = "time [days]") +
   ylab(label = "displacement [1]") +
@@ -145,7 +144,8 @@ tidy(mseries) %>%
     ),
     linetype = "dotdash",
     colour = "red"
-  )
+  ) +
+  theme_bw()
 
 #-------------------------------------------------------------------------------
 ## Autocorrelation and partial autocorrelation
@@ -167,9 +167,72 @@ acf(x = y_xts$y4, main = "ACF: AR(1), positive coeff, 0 < absVal < 1")
 pacf(x = y_xts$y4, main = "PACF: AR(1), positive coeff, 0 < absVal < 1")
 
 #-------------------------------------------------------------------------------
+## Stationarity tests
+#-------------------------------------------------------------------------------
+coredata(y_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.df,
+    type = "none",
+    #lags = 32 ,
+    selectlags = "AIC"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+
+coredata(y_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.kpss,
+    type = "mu" ,
+    lags = "long"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+
+#-------------------------------------------------------------------------------
 ## Generate synthetic lag-1-difference time series
 #-------------------------------------------------------------------------------
-y_diff_xts <- diff(x = y_xts, lag = 1)
+y_diff_xts <- diff(x = y_xts, lag = 1) %>%
+  na.omit(object = .)
 
 #-------------------------------------------------------------------------------
 ## Visualisation
@@ -195,10 +258,10 @@ names(mseries2) <-
 index(mseries2) <-
   as.Date(index(mseries2))
 
-tidy(mseries2) %>%
-  ggplot(mapping = aes(x = index, y = value, colour = series)) +
+broom::tidy(x = mseries2) %>%
+  ggplot(data = .,
+         mapping = aes(x = index, y = value, colour = series)) +
   geom_line(size = 1.0) +
-  theme_bw() +
   labs(title = "Simple lag-1-difference time series models") +
   xlab(label = "time [days]") +
   ylab(label = "lag-1-difference displacement [1]") +
@@ -237,7 +300,8 @@ tidy(mseries2) %>%
     ),
     linetype = "dotdash",
     colour = "red"
-  )
+  ) +
+  theme_bw()
 
 #-------------------------------------------------------------------------------
 ## Autocorrelation and partial autocorrelation
@@ -273,6 +337,68 @@ acf(x = y_diff_xts$y4,
 pacf(x = y_diff_xts$y4,
      na.action = na.pass,
      main = "PACF: lag-1-difference AR(1), positive coeff, 0 < absVal < 1")
+
+#-------------------------------------------------------------------------------
+## Stationarity tests
+#-------------------------------------------------------------------------------
+coredata(y_diff_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.df,
+    type = "none",
+    #lags = 32 ,
+    selectlags = "AIC"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+
+coredata(y_diff_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.kpss,
+    type = "mu" ,
+    lags = "long"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
 
 ################################################################################
 ################################################################################
