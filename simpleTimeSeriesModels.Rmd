@@ -1,0 +1,541 @@
+---
+title: "Generation of simple time series: white noise and AR(1), with special
+  case random walk"
+author: Henk van Elst
+date: 2021-01-26
+output:
+  html_notebook:
+    number_sections: true
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!--#########################################################################-->
+# Introduction
+<!--#########################################################################-->
+
+URL: https://rc2e.com/timeseriesanalysis
+
+R Version `r getRversion()`.
+
+<!--#########################################################################-->
+# Load packages
+<!--#########################################################################-->
+
+```{r libraries}
+library(tidyverse)
+library(xts)
+library(forecast)
+library(urca)
+```
+
+<!--#########################################################################-->
+# Specify parameter values
+<!--#########################################################################-->
+
+```{r parameters}
+n <- 250
+alpha <- 0.75
+sigma <- 2.0
+```
+
+<!--#########################################################################-->
+# Generate synthetic time series
+<!--#########################################################################-->
+
+## Initialise synthetic time series
+
+```{r init}
+time <- Sys.Date() + 0:(n - 1)
+y1 <- y2 <- y3 <- y4 <- c(rep(x = 0, times = n))
+```
+
+## Generate white noise
+
+```{r whitenoise}
+# Gaussian white noise
+w <-
+  rnorm(n = n ,
+        mean = 0 ,
+        sd = sigma)
+
+# alternative: Gossetian white noise (df = 2)
+#w <-
+#  rt(n = n , df = 2)
+```
+
+## Generate time series
+
+```{r timeseries}
+for (i in 2:n) {
+  
+  # white noise
+  y1[i] <- w[i]
+  
+  # AR(1): negative coeff, 0 < absVal < 1
+  y2[i] <- -alpha * y2[i - 1] + w[i]
+  
+  # AR(1): random walk
+  y3[i] <- y3[i - 1] + w[i]
+  
+  # AR(1): positive coeff, 0 < absVal < 1
+  y4[i] <- alpha * y4[i - 1] + w[i]
+}
+```
+
+## Collect data in xts object
+
+```{r xtsobject}
+y_xts <- xts(x = t(rbind(y1, y2, y3, y4)) ,
+             order.by = time)
+```
+
+<!--#########################################################################-->
+# Lines representing quantiles of N(0, sigma^2), scaled by sqrt(t) according to random walk
+<!--#########################################################################-->
+
+```{r quantilelines}
+quantileLineNorm <-
+  function(x,
+           sign = 1,
+           prob = 0.89,
+           sigma = 1.0) {
+    t1 <- (x - Sys.Date())
+    t2 <- as.numeric(t1)
+    out <- sign * qnorm(p = prob, mean = 0, sd = sigma) * sqrt(t2)
+    return(out)
+  }
+```
+
+<!--#########################################################################-->
+# Visualisation
+<!--#########################################################################-->
+
+```{r plot1}
+plot.xts(
+  x = y_xts ,
+  main = "Simple time series models" ,
+  xlab = "time" ,
+  ylab = "displacement"
+)
+```
+
+With ggplot2
+URL: https://stackoverflow.com/questions/38597464/multiple-time-series-in-ggplot2-from-xts-object
+
+```{r plot2}
+mseries <-
+  cbind(y_xts$y1 ,
+        y_xts$y2 ,
+        y_xts$y3 ,
+        y_xts$y4)
+names(mseries) <-
+  c("white noise" ,
+    "negative alpha AR_1" ,
+    "random walk" ,
+    "positive alpha AR_1")
+index(mseries) <-
+  as.Date(index(mseries))
+
+broom::tidy(x = mseries) %>%
+  ggplot(data = .,
+         mapping = aes(x = index, y = value, colour = series)) +
+  geom_line(size = 1.0) +
+  labs(title = "Simple time series models") +
+  xlab(label = "time [days]") +
+  ylab(label = "displacement [1]") +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.89,
+                sigma = sigma),
+    linetype = "dashed",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.89,
+      sigma = sigma
+    ),
+    linetype = "dashed",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.97,
+                sigma = sigma),
+    linetype = "dotdash",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.97,
+      sigma = sigma
+    ),
+    linetype = "dotdash",
+    colour = "red"
+  ) +
+  theme_bw()
+```
+
+<!--#########################################################################-->
+# Autocorrelation and partial autocorrelation
+<!--#########################################################################-->
+
+## White noise
+
+```{r acfwn}
+forecast::tsdisplay(
+  x = y_xts$y1,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "White noise"
+)
+```
+
+## AR(1): negative coeff, 0 < absVal < 1
+
+```{r acfar1neg}
+forecast::tsdisplay(
+  x = y_xts$y2,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "AR(1), negative coeff, 0 < absVal < 1"
+)
+```
+
+
+## AR(1): random walk
+
+```{r acfrw}
+forecast::tsdisplay(
+  x = y_xts$y3,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "AR(1), random walk"
+)
+```
+
+
+## AR(1): positive coeff, 0 < absVal < 1
+
+```{r acfar1pos}
+forecast::tsdisplay(
+  x = y_xts$y4,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "AR(1), positive coeff, 0 < absVal < 1"
+)
+```
+
+<!--#########################################################################-->
+# Stationarity tests
+<!--#########################################################################-->
+
+## Augmented Dickey-Fuller test
+
+```{r adf}
+coredata(y_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.df,
+    type = "none",
+    #lags = 32 ,
+    selectlags = "AIC"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+```
+
+## Kwiatkowski–Phillips–Schmidt–Shin-test
+
+```{r kpss}
+coredata(y_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.kpss,
+    type = "mu" ,
+    lags = "long"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+```
+
+<!--#########################################################################-->
+# Generate synthetic lag-1-difference time series
+<!--#########################################################################-->
+
+```{r timeseriesdiff}
+y_diff_xts <- diff(x = y_xts, lag = 1) %>%
+  na.omit(object = .)
+```
+
+<!--#########################################################################-->
+# Visualisation
+<!--#########################################################################-->
+
+```{r plot3}
+plot.xts(
+  x = y_diff_xts ,
+  main = "Simple lag-1-difference time series models" ,
+  xlab = "time" ,
+  ylab = "lag-1-difference displacement"
+)
+```
+
+ggplot2
+
+URL: https://stackoverflow.com/questions/38597464/multiple-time-series-in-ggplot2-from-xts-object
+
+```{r plot4}
+mseries2 <-
+  cbind(y_diff_xts$y1 ,
+        y_diff_xts$y2 ,
+        y_diff_xts$y3 ,
+        y_diff_xts$y4)
+names(mseries2) <-
+  c(
+    "white noise lag 1" ,
+    "negative alpha AR_1 lag 1" ,
+    "random walk lag 1" ,
+    "positive alpha AR_1 lag 1"
+  )
+index(mseries2) <-
+  as.Date(index(mseries2))
+
+broom::tidy(x = mseries2) %>%
+  ggplot(data = .,
+         mapping = aes(x = index, y = value, colour = series)) +
+  geom_line(size = 1.0) +
+  labs(title = "Simple lag-1-difference time series models") +
+  xlab(label = "time [days]") +
+  ylab(label = "lag-1-difference displacement [1]") +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.89,
+                sigma = sigma),
+    linetype = "dashed",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.89,
+      sigma = sigma
+    ),
+    linetype = "dashed",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(sign = 1,
+                prob = 0.97,
+                sigma = sigma),
+    linetype = "dotdash",
+    colour = "red"
+  ) +
+  stat_function(
+    fun = quantileLineNorm,
+    args = list(
+      sign = -1,
+      prob = 0.97,
+      sigma = sigma
+    ),
+    linetype = "dotdash",
+    colour = "red"
+  ) +
+  theme_bw()
+```
+
+<!--#########################################################################-->
+# Autocorrelation and partial autocorrelation
+<!--#########################################################################-->
+
+## White noise
+
+```{r acfwndiff}
+forecast::tsdisplay(
+  x = y_diff_xts$y1,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "Lag-1-difference white noise"
+)
+```
+
+## AR(1): negative coeff, 0 < absVal < 1
+
+```{r acfa1negdiff}
+forecast::tsdisplay(
+  x = y_diff_xts$y2,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "Lag-1-difference AR(1), negative coeff, 0 < absVal < 1"
+)
+```
+
+## AR(1): random walk
+
+```{r acfrwdiff}
+forecast::tsdisplay(
+  x = y_diff_xts$y3,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "Lag-1-difference AR(1), random walk"
+)
+```
+
+## AR(1): positive coeff, 0 < absVal < 1
+
+```{r acfa1posdiff}
+forecast::tsdisplay(
+  x = y_diff_xts$y4,
+  plot.type = "partial",
+  points = TRUE,
+  ci.type = "white",
+  na.action = na.pass,
+  main = "Lag-1-difference AR(1), positive coeff, 0 < absVal < 1"
+)
+```
+
+<!--#########################################################################-->
+# Stationarity tests
+<!--#########################################################################-->
+
+## Augmented Dickey-Fuller test
+
+```{r adf2}
+coredata(y_diff_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.df,
+    type = "none",
+    #lags = 32 ,
+    selectlags = "AIC"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+```
+
+## Kwiatkowski–Phillips–Schmidt–Shin-test
+
+```{r kpss2}
+coredata(y_diff_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.kpss,
+    type = "mu" ,
+    lags = "long"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+```
+
+<!--#########################################################################-->
+# Information on session
+<!--#########################################################################-->
+
+```{r session, echo = FALSE}
+sessionInfo()
+```
+
+<!--#########################################################################-->
+<!--#########################################################################-->
