@@ -1,11 +1,12 @@
 ---
-title: "Generation of simple time series: white noise and AR(1), with special
-  case random walk"
+title: "Generation of simple time series: AR(1) process with Gaußian white noise, incl. special case random walk"
 author: Henk van Elst
-date: 2021-01-26
+date: Mi, 26.5.2021
 output:
   html_notebook:
     number_sections: true
+    toc: true
+    theme: united
 ---
   
 ```{r setup, include=FALSE}
@@ -15,8 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 <!--#########################################################################-->
 # Introduction
 <!--#########################################################################-->
-
-URL: https://rc2e.com/timeseriesanalysis
+For a general introduction to time series analysis with R see, e.g., URL: https://rc2e.com/timeseriesanalysis.
 
 R Version `r getRversion()`.
 
@@ -32,8 +32,12 @@ library(urca)
 ```
 
 <!--#########################################################################-->
-# Specify parameter values
+# Generate synthetic time series
 <!--#########################################################################-->
+Setup a routine to generate time series data from an autoregressive process of
+order one, AR(1).
+
+## Specify parameter values
 
 ```{r parameters}
 n <- 250
@@ -41,55 +45,61 @@ alpha <- 0.75
 sigma <- 2.0
 ```
 
-<!--#########################################################################-->
-# Generate synthetic time series
-<!--#########################################################################-->
-
-## Initialise synthetic time series
+## Set time index
 
 ```{r init}
 time <- Sys.Date() + 0:(n - 1)
-y1 <- y2 <- y3 <- y4 <- c(rep(x = 0, times = n))
 ```
 
-## Generate white noise
+## Divise AR(1) process with Gaußian white noise
 
-```{r whitenoise}
-# Gaussian white noise
-w <-
-  rnorm(n = n ,
-        mean = 0 ,
-        sd = sigma)
-
-# alternative: Gossetian white noise (df = 2)
-#w <-
-#  rt(n = n , df = 2)
+```{r aroneprocess}
+ar_one_process <-
+  function(n,
+           y0 = 0,
+           alpha = 1,
+           sigma = 1) {
+    
+    y <- vector(mode = "numeric", length = n)
+    y[1] <- y0
+    
+    # Gaussian white noise
+    w <- rnorm(n = n, mean = 0, sd = sigma)
+    
+    # alternative: Gossetian white noise (df = 2)
+    # w <- rt(n = n , df = 2)
+    
+    for (i in 2:n) {
+      y[i] <- alpha * y[i - 1] + w[i]
+    }
+    
+    return(y)
+    
+  }
 ```
 
-## Generate time series
+## Generate time series data
 
 ```{r timeseries}
-for (i in 2:n) {
-  
-  # white noise
-  y1[i] <- w[i]
-  
-  # AR(1): negative coeff, 0 < absVal < 1
-  y2[i] <- -alpha * y2[i - 1] + w[i]
-  
-  # AR(1): random walk
-  y3[i] <- y3[i - 1] + w[i]
-  
-  # AR(1): positive coeff, 0 < absVal < 1
-  y4[i] <- alpha * y4[i - 1] + w[i]
-}
+data <-
+  tibble::tibble(
+    y1 = ar_one_process(n = n, y0 = 0, alpha = 0.0, sigma = sigma),
+    y2 = ar_one_process(n = n, y0 = 0, alpha = -alpha, sigma = sigma),
+    y3 = ar_one_process(n = n, y0 = 0, alpha = 1.0, sigma = sigma),
+    y4 = ar_one_process(n = n, y0 = 0, alpha = alpha, sigma = sigma)
+  )
 ```
 
 ## Collect data in xts object
 
 ```{r xtsobject}
-y_xts <- xts(x = t(rbind(y1, y2, y3, y4)) ,
-             order.by = time)
+y_xts <-
+  xts::xts(
+    x = data,
+    order.by = time,
+    frequency = 1,
+    unique = TRUE
+  )
 ```
 
 <!--#########################################################################-->
