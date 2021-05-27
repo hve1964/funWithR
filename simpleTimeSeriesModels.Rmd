@@ -1,7 +1,7 @@
 ---
-title: "Generation of simple time series: AR(1) process with Gaußian white noise, incl. special case random walk"
+title: "Generation of simple time series: AR(1) process with white noise, incl. special case random walk"
 author: Henk van Elst
-date: Mi, 26.5.2021
+date: Do, 27.5.2021
 output:
   html_notebook:
     number_sections: true
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 <!--#########################################################################-->
 # Introduction
 <!--#########################################################################-->
-For a general introduction to time series analysis with R see, e.g., URL: https://rc2e.com/timeseriesanalysis.
+For a general introduction to time series analysis with R, see, e.g., URL: https://rc2e.com/timeseriesanalysis.
 
 R Version `r getRversion()`.
 
@@ -35,7 +35,7 @@ library(urca)
 # Generate synthetic time series
 <!--#########################################################################-->
 Setup a routine to generate time series data from an autoregressive process of
-order one, AR(1).
+order one, AR(1), with either Gaußian or Gossetian white noise..
 
 ## Specify parameter values
 
@@ -43,6 +43,8 @@ order one, AR(1).
 n <- 250
 alpha <- 0.75
 sigma <- 2.0
+df <- 3
+type <- "gosset" # "gauss"
 ```
 
 ## Set time index
@@ -51,23 +53,30 @@ sigma <- 2.0
 time <- Sys.Date() + 0:(n - 1)
 ```
 
-## Divise AR(1) process with Gaußian white noise
+## Divise AR(1) process with white noise
+
+White noise can either be Gaußian (type: "gauss"; default) or Gossetian (type: 
+"gosset").
 
 ```{r aroneprocess}
 ar_one_process <-
   function(n,
            y0 = 0,
            alpha = 1,
-           sigma = 1) {
+           sigma = 1,
+           df = 3,
+           type = "gauss") {
     
     y <- vector(mode = "numeric", length = n)
     y[1] <- y0
     
-    # Gaussian white noise
-    w <- rnorm(n = n, mean = 0, sd = sigma)
-    
-    # alternative: Gossetian white noise (df = 2)
-    # w <- rt(n = n , df = 2)
+    if (type == "gauss") {
+      # Gaussian white noise
+      w <- rnorm(n = n, mean = 0, sd = sigma)
+    } else if (type == "gosset") {
+      # Gossetian white noise
+      w <- rt(n = n , df = df)
+    }
     
     for (i in 2:n) {
       y[i] <- alpha * y[i - 1] + w[i]
@@ -83,10 +92,38 @@ ar_one_process <-
 ```{r timeseries}
 data <-
   tibble::tibble(
-    y1 = ar_one_process(n = n, y0 = 0, alpha = 0.0, sigma = sigma),
-    y2 = ar_one_process(n = n, y0 = 0, alpha = -alpha, sigma = sigma),
-    y3 = ar_one_process(n = n, y0 = 0, alpha = 1.0, sigma = sigma),
-    y4 = ar_one_process(n = n, y0 = 0, alpha = alpha, sigma = sigma)
+    y1 = ar_one_process(
+      n = n,
+      y0 = 0,
+      alpha = 0.0,
+      sigma = sigma,
+      df = df,
+      type = type
+    ),
+    y2 = ar_one_process(
+      n = n,
+      y0 = 0,
+      alpha = -alpha,
+      sigma = sigma,
+      df = df,
+      type = type
+    ),
+    y3 = ar_one_process(
+      n = n,
+      y0 = 0,
+      alpha = 1.0,
+      sigma = sigma,
+      df = df,
+      type = type
+    ),
+    y4 = ar_one_process(
+      n = n,
+      y0 = 0,
+      alpha = alpha,
+      sigma = sigma,
+      df = df,
+      type = type
+    )
   )
 ```
 
@@ -136,20 +173,20 @@ With ggplot2
 URL: https://stackoverflow.com/questions/38597464/multiple-time-series-in-ggplot2-from-xts-object
 
 ```{r plot2}
-mseries <-
+mseries1 <-
   cbind(y_xts$y1 ,
         y_xts$y2 ,
         y_xts$y3 ,
         y_xts$y4)
-names(mseries) <-
+names(mseries1) <-
   c("white noise" ,
     "negative alpha AR_1" ,
     "random walk" ,
     "positive alpha AR_1")
-index(mseries) <-
-  as.Date(index(mseries))
+index(mseries1) <-
+  as.Date(index(mseries1))
 
-broom::tidy(x = mseries) %>%
+broom::tidy(x = mseries1) %>%
   ggplot(data = .,
          mapping = aes(x = index, y = value, colour = series)) +
   geom_line(size = 1.0) +
