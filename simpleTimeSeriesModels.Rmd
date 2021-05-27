@@ -75,7 +75,7 @@ ar_one_process <-
       w <- rnorm(n = n, mean = 0, sd = sigma)
     } else if (type == "gosset") {
       # Gossetian white noise
-      w <- rt(n = n , df = df)
+      w <- rt(n = n, df = df)
     }
     
     for (i in 2:n) {
