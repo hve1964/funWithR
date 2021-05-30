@@ -20,15 +20,16 @@ for(sim in 1:number_of_trials) {
   i <- 1 # Counter
   repeat {
     if (rbinom(n = 1, size = 1, prob = prob_for_success) == 0) {
-      # Coin toss with Boolean (if tails...)
+      # Coin toss with Boolean (if "Tails" ...)
       i <- i + 1
     } # ... increase the counter by 1.
     else {
       break
-    } # If heads, stop!
+    } # If "Heads", stop!
   }
   
-  tosses_til_head[sim] <- i # Collect the number of tosses before we got "Head".
+  # Collect the number of tosses before we got "Heads".
+  tosses_til_head[sim] <- i
 }
 
 mean(x = tosses_til_head) # Average of these ... simulations.
