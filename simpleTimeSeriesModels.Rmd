@@ -1,7 +1,7 @@
 ---
 title: "Generation of simple time series: AR(1) process with white noise, incl. special case random walk"
 author: Henk van Elst
-date: Do, 27.5.2021
+date: So, 30.5.2021
 output:
   html_notebook:
     number_sections: true
@@ -328,7 +328,7 @@ coredata(y_xts) %>%
   bind_rows(.id = "time_series")
 ```
 
-## Kwiatkowski–Phillips–Schmidt–Shin-test
+## Kwiatkowski–Phillips–Schmidt–Shin test
 
 ```{r kpss}
 coredata(y_xts) %>%
@@ -337,6 +337,40 @@ coredata(y_xts) %>%
     MARGIN = 2,
     FUN = ur.kpss,
     type = "mu" ,
+    lags = "long"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+```
+
+## Phillips-Perron test
+
+```{r pp}
+coredata(y_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.pp,
+    type = "Z-tau",
+    model = "constant",
     lags = "long"
   ) %>%
   map(function(urca.element) {
@@ -543,7 +577,7 @@ coredata(y_diff_xts) %>%
   bind_rows(.id = "time_series")
 ```
 
-## Kwiatkowski–Phillips–Schmidt–Shin-test
+## Kwiatkowski–Phillips–Schmidt–Shin test
 
 ```{r kpss2}
 coredata(y_diff_xts) %>%
@@ -552,6 +586,40 @@ coredata(y_diff_xts) %>%
     MARGIN = 2,
     FUN = ur.kpss,
     type = "mu" ,
+    lags = "long"
+  ) %>%
+  map(function(urca.element) {
+    return(
+      tibble(
+        critical_values = as.data.frame(urca.element@cval) %>%
+          filter(row_number() == 1),
+        test_statistic = urca.element@teststat
+      )
+    )
+  }) %>%
+  map(function(results_table) {
+    results_table %>%
+      transmute(
+        .data = .,
+        `0.01` = .$critical_values$`1pct`,
+        `0.05` = .$critical_values$`5pct`,
+        `0.10` = .$critical_values$`10pct`,
+        teststat = .$test_statistic
+      )
+  }) %>%
+  bind_rows(.id = "time_series")
+```
+
+## Phillips-Perron test
+
+```{r pp2}
+coredata(y_diff_xts) %>%
+  apply(
+    X = .,
+    MARGIN = 2,
+    FUN = ur.pp,
+    type = "Z-tau",
+    model = "constant",
     lags = "long"
   ) %>%
   map(function(urca.element) {
