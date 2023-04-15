@@ -2,7 +2,8 @@ fibonacci <-
   function(n) {
     if (n < 3) {
       stop(paste0("Fehler!\n",
-                  "Gib einen Wert fuer n groesser oder gleich 3 ein."))
+                  "Gib einen ganzzahligen Wert fuer n groesser oder ",
+                  "gleich 3 ein."))
     }
     
     folge <-
