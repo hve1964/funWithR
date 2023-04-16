@@ -10,7 +10,7 @@ fibonacci <-
       integer(length = n)
     
     folge[1:2] <-
-      c(1L, 1L)
+      c(0L, 1L)
     
     for (i in 3:n) {
       folge[i] <-
