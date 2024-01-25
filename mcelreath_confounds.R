@@ -196,3 +196,46 @@ plot(
 abline(lm(Y[Z == 1] ~ X[Z == 1]), col = 2, lwd = 3)
 abline(lm(Y[Z == 0] ~ X[Z == 0]), col = 4, lwd = 3)
 abline(lm(Y ~ X), lwd = 3)
+
+# 4. The Descendant ----
+
+## Discrete case ----
+tib_desc <-
+  tibble::tibble(
+    X = stats::rbinom(
+      n = n,
+      size = 1L,
+      prob = 0.5
+    ),
+    Z = stats::rbinom(
+      n = n,
+      size = 1L,
+      prob = (1 - X) * 0.1 + X * 0.9
+    ),
+    Y = stats::rbinom(
+      n = n,
+      size = 1L,
+      prob = (1 - Z) * 0.1 + Z * 0.9
+    ),
+    A = stats::rbinom(
+      n = n,
+      size = 1L,
+      prob = (1 - Z) * 0.1 + Z * 0.9
+    )
+  ) %>%
+  dplyr::relocate(
+    .data = .,
+    Z,
+    .after = Y
+  )
+
+### Association X and Y: not stratified by A ----
+table(tib_desc$X, tib_desc$Y)
+stats::cor(x = tib_desc$X, y = tib_desc$Y)
+
+### Association X and Y: stratified by A ----
+table(tib_desc$X[tib_desc$A == 0], tib_desc$Y[tib_desc$A == 0])
+stats::cor(x = tib_desc$X[tib_desc$A == 0], y = tib_desc$Y[tib_desc$A == 0])
+
+table(tib_desc$X[tib_desc$A == 1], tib_desc$Y[tib_desc$A == 1])
+stats::cor(x = tib_desc$X[tib_desc$A == 1], y = tib_desc$Y[tib_desc$A == 1])
