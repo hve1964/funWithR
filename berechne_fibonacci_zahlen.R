@@ -9,6 +9,9 @@ berechne_fibonacci_zahlen <-
                   "gleich 3 ein."))
     }
 
+    # Anzahl anzuzeigender Dezimalstellen:
+    options(digits = 14)
+
     # Initialisieren eines Vektors (integer):
     zahlen <-
       vector(
