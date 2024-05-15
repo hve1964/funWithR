@@ -93,7 +93,10 @@ irrfahrt_sim <-
       tibble::tibble(zeit = zeit) %>%
       dplyr::bind_cols(
         .,
-        tibble::as_tibble(x = wertematrix)
+        tibble::as_tibble(
+          x = wertematrix,
+          .name_repair = "unique"
+        )
       )
     
     # Quantilslinien (Gauss/ Gosset)berechnen
