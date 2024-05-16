@@ -14,7 +14,7 @@ irrfahrt_sim <-
     quantil2 = 0.97,
     df = 3
   ) {
-    
+
     # Zeitwerte:
     zeit <-
       seq(
@@ -22,7 +22,7 @@ irrfahrt_sim <-
         by = 1,
         length.out = (schritte + 1)
       )
-    
+
     # Irrfahrtgenerator (Gauss/ Gosset):
     irrfahrt <-
       function(
@@ -32,17 +32,17 @@ irrfahrt_sim <-
         typ = typ,
         df = df
       ) {
-        
+
         y <-
           vector(
             mode = "numeric",
             length = (schritte + 1)
           )
-        
+
         y[1] <- y0
-        
+
         if (typ == "Gauss") {
-          
+
           # Gaussian white noise
           w <-
             stats::rnorm(
@@ -50,31 +50,31 @@ irrfahrt_sim <-
               mean = 0,
               sd = sigma
             )
-          
+
         } else if (typ == "Gosset") {
-          
+
           # Gossetian white noise
           w <-
             stats::rt(
               n = schritte,
               df = df
             )
-          
+
         } else {
           stop(
             paste0("Fehler! Bitte entweder den Typ 'Gauss' ",
                    "oder den Typ 'Gosset' waehlen.")
           )
         }
-        
+
         for (i in 2:(schritte + 1)) {
           y[i] <-
             y[i - 1] + w[i - 1]
         }
-        
+
         return(y)
       }
-    
+
     # Realisationen von Irrfahrten generieren:
     wertematrix <-
       replicate(
@@ -87,7 +87,7 @@ irrfahrt_sim <-
           df = df
         )
       )
-    
+
     # Zeitreihendaten-tibble:
     zeitreihendaten <-
       tibble::tibble(zeit = zeit) %>%
@@ -98,11 +98,11 @@ irrfahrt_sim <-
           .name_repair = "unique"
         )
       )
-    
+
     # Quantilslinien (Gauss/ Gosset)berechnen
     #   (koennen auch mit ggplot2::stat_function() eingefuehrt werden):
     if (typ == "Gauss") {
-      
+
       # Quantilsline 1o:
       quant1o <-
         tibble::tibble(
@@ -113,7 +113,7 @@ irrfahrt_sim <-
             sd = sigma
           ) * sqrt(x)
         )
-      
+
       # Quantilsline 1u:
       quant1u <-
         tibble::tibble(
@@ -124,7 +124,7 @@ irrfahrt_sim <-
             sd = sigma
           ) * sqrt(x)
         )
-      
+
       # Quantilsline 2o:
       quant2o <-
         tibble::tibble(
@@ -135,7 +135,7 @@ irrfahrt_sim <-
             sd = sigma
           ) * sqrt(x)
         )
-      
+
       # Quantilsline 2u:
       quant2u <-
         tibble::tibble(
@@ -146,9 +146,9 @@ irrfahrt_sim <-
             sd = sigma
           ) * sqrt(x)
         )
-      
+
     } else if (typ == "Gosset") {
-      
+
       # Quantilsline 1o:
       quant1o <-
         tibble::tibble(
@@ -158,7 +158,7 @@ irrfahrt_sim <-
             df = df
           ) * sqrt(x)
         )
-      
+
       # Quantilsline 1u:
       quant1u <-
         tibble::tibble(
@@ -168,7 +168,7 @@ irrfahrt_sim <-
             df = df
           ) * sqrt(x)
         )
-      
+
       # Quantilsline 2o:
       quant2o <-
         tibble::tibble(
@@ -178,7 +178,7 @@ irrfahrt_sim <-
             df = df
           ) * sqrt(x)
         )
-      
+
       # Quantilsline 2u:
       quant2u <-
         tibble::tibble(
@@ -188,14 +188,14 @@ irrfahrt_sim <-
             df = df
           ) * sqrt(x)
         )
-      
+
     } else {
       stop(
         paste0("Fehler! Bitte entweder den Typ 'Gauss' ",
                "oder den Typ 'Gosset' waehlen.")
       )
     }
-    
+
     # Visualisierung:
     ausgabe <-
       zeitreihendaten %>%
@@ -262,26 +262,27 @@ irrfahrt_sim <-
       ) +
       ggplot2::labs(
         title = "Eindimensionaler Irrfahrtprozess",
-        subtitle = paste0(
-          "Typ: ",
-          typ,
-          "; Realisationen: ",
-          anzahl,
-          "; Zeitschritte: ",
-          schritte,
-          "; ",
-          expression(sigma),
-          ": ",
-          dplyr::if_else(
-            condition = typ == "Gauss",
-            true = sigma,
-            false = 1.0
+        subtitle = latex2exp::TeX(
+          input = paste0(
+            "Typ: ",
+            typ,
+            "; Realisationen: ",
+            anzahl,
+            "; Zeitschritte: ",
+            schritte,
+            "; $\\sigma = $",
+            dplyr::if_else(
+              condition = typ == "Gauss",
+              true = sigma,
+              false = 1.0
+            ),
+            "; Quantile: ",
+            quantil1 * 100,
+            " % / ",
+            quantil2 * 100,
+            " %"
           ),
-          "; Quantile: ",
-          quantil1 * 100,
-          " % / ",
-          quantil2 * 100,
-          " %"
+          output = "expression"
         )
       ) +
       ggplot2::scale_x_continuous(name = "Zeit / 1") +
@@ -289,7 +290,7 @@ irrfahrt_sim <-
       ggplot2::scale_colour_viridis_d() +
       ggplot2::guides(colour = "none") +
       ggplot2::theme_bw()
-    
+
     return(ausgabe)
   }
 
