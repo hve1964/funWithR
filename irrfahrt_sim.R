@@ -1,25 +1,26 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Autor: Henk van Elst
-# Datum: So, 22.01.2023
+# Datum: So, 22.01.2023 / So, 08.12.2024
 # Thema: Realisationen von Irrfahrtprozessen
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 irrfahrt_sim <-
   function(
-    anzahl = 10,
-    schritte = 100,
-    y0 = 0,
+    anzahl = 10L,
+    schritte = 100L,
+    schrittlaenge = 1.0,
+    y0 = 0.0,
     typ = "Gauss",
     sigma = 1.0,
-    quantil1 = 0.89,
-    quantil2 = 0.97,
-    df = 3
+    alpha_1 = 0.11,
+    alpha_2 = 0.03,
+    df = 3.0
   ) {
 
     # Zeitwerte:
     zeit <-
       seq(
         from = 0,
-        by = 1,
+        by = schrittlaenge,
         length.out = (schritte + 1)
       )
 
@@ -99,7 +100,7 @@ irrfahrt_sim <-
         )
       )
 
-    # Quantilslinien (Gauss/ Gosset)berechnen
+    # Quantilslinien (Gauss/ Gosset) berechnen
     #   (koennen auch mit ggplot2::stat_function() eingefuehrt werden):
     if (typ == "Gauss") {
 
@@ -108,9 +109,9 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 + stats::qnorm(
-            p = quantil1,
+            p = (1.0 - (alpha_1 / 2)),
             mean = 0,
-            sd = sigma
+            sd = (sigma / sqrt(x = schrittlaenge))
           ) * sqrt(x)
         )
 
@@ -119,9 +120,9 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 - stats::qnorm(
-            p = quantil1,
+            p = (1.0 - (alpha_1 / 2)),
             mean = 0,
-            sd = sigma
+            sd = (sigma / sqrt(x = schrittlaenge))
           ) * sqrt(x)
         )
 
@@ -130,9 +131,9 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 + stats::qnorm(
-            p = quantil2,
+            p = (1.0 - (alpha_2 / 2)),
             mean = 0,
-            sd = sigma
+            sd = (sigma / sqrt(x = schrittlaenge))
           ) * sqrt(x)
         )
 
@@ -141,9 +142,9 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 - stats::qnorm(
-            p = quantil2,
+            p = (1.0 - (alpha_2 / 2)),
             mean = 0,
-            sd = sigma
+            sd = (sigma / sqrt(x = schrittlaenge))
           ) * sqrt(x)
         )
 
@@ -154,7 +155,7 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 + stats::qt(
-            p = quantil1,
+            p = (1.0 - (alpha_1 / 2)),
             df = df
           ) * sqrt(x)
         )
@@ -164,7 +165,7 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 - stats::qt(
-            p = quantil1,
+            p = (1.0 - (alpha_1 / 2)),
             df = df
           ) * sqrt(x)
         )
@@ -174,7 +175,7 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 + stats::qt(
-            p = quantil2,
+            p = (1.0 - (alpha_2 / 2)),
             df = df
           ) * sqrt(x)
         )
@@ -184,7 +185,7 @@ irrfahrt_sim <-
         tibble::tibble(
           x = zeit,
           y = y0 - stats::qt(
-            p = quantil2,
+            p = (1.0 - (alpha_2 / 2)),
             df = df
           ) * sqrt(x)
         )
@@ -270,6 +271,8 @@ irrfahrt_sim <-
             anzahl,
             "; Zeitschritte: ",
             schritte,
+            "; Zeitschrittlänge: ",
+            schrittlaenge,
             "; $\\sigma = $",
             dplyr::if_else(
               condition = typ == "Gauss",
@@ -277,9 +280,9 @@ irrfahrt_sim <-
               false = 1.0
             ),
             "; Quantile: ",
-            quantil1 * 100,
+            (1.0 - (alpha_1 / 2)) * 100,
             " % / ",
-            quantil2 * 100,
+            (1.0 - (alpha_2 / 2)) * 100,
             " %"
           ),
           output = "expression"
