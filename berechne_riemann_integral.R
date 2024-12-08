@@ -3,7 +3,7 @@ berechne_riemann_integral <-
     funktion = \(x) x,
     untere_grenze = 0.0,
     obere_grenze = 1.0,
-    anzahl_intervalle = 1e2
+    anzahl_intervalle = 1e2L
   ) {
     # hve: So, 08.12.2024
     intervall_breite <-
