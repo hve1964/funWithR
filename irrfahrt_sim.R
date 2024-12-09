@@ -15,7 +15,6 @@ irrfahrt_sim <-
     alpha_2 = 0.03,
     df = 3.0
   ) {
-
     # Zeitwerte:
     zeit <-
       seq(
@@ -280,9 +279,9 @@ irrfahrt_sim <-
               false = 1.0
             ),
             "; Quantile: ",
-            (1.0 - (alpha_1 / 2)) * 100,
+            (1.0 - alpha_1) * 100,
             " % / ",
-            (1.0 - (alpha_2 / 2)) * 100,
+            (1.0 - alpha_2) * 100,
             " %"
           ),
           output = "expression"
